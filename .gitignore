@@ -1,60 +1,71 @@
-# --- Python / Flask ---
+# === PROJECT-WIDE IGNORES ===
+
+# Environment variables (contains API keys!)
+.env
+.env.*
+
+
+# === PYTHON / FLASK BACKEND ===
 __pycache__/
 *.py[cod]
-*.egg
-*.egg-info/
-dist/
+*$py.class
+*.so
+.Python
 build/
-*.log
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
 # Virtual environments
-/langenv/
+venv/
+ENV/
+env/
+.venv/
+langenv/
 .python-version
 
 # Flask instance folder
 instance/
+flask_session/
 
-# PyInstaller
-*.spec
+# Logs
+*.log
+*.out
 
-# IDEs / Editors
+# Database files
+*.db
+*.sqlite3
+users.json
+
+# === NEO4J (Future) ===
+*.dump
+*.graph.db
+*.db-journal
+
+# === IDE / EDITORS ===
 .vscode/
 .idea/
 *.sublime-project
 *.sublime-workspace
-
-# Environment variables
-.env
-.env.*
-
-# --- Node / React frontend ---
-# Dependency directories
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-package-lock.json
-yarn.lock
-
-# Build output
-/build
-/dist
-*.tsbuildinfo
-
-# React specific
-*.env.local
-*.env.development.local
-*.env.test.local
-*.env.production.local
-
-# --- Neo4j ---
-# Ignore database import/export dumps or credentials
-*.dump
-*.graph.db
-*.db
-*.db-journal
-
-# --- OS Specific ---
 .DS_Store
 Thumbs.db
 
+# === OS SPECIFIC ===
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
