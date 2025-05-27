@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "bootstrap": "^5.3.6",
+    "bootstrap-icons": "^1.13.1",
+    "franc-min": "^6.2.0",
     "microsoft-cognitiveservices-speech-sdk": "^1.44.0",
     "react": "^19.1.0",
     "react-bootstrap": "^2.10.10",

@@ -25,13 +25,19 @@ function ProtectedRoute({ children }) {
   // Show loading while checking
   if (isLoggedIn === null) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '50vh' 
-      }}>
-        Checking login status...
+      <div className="page-layout">
+        <div className="container">
+          <div className="row justify-content-center">
+            <div className="col-md-6">
+              <div className="content-card text-center">
+                <div className="spinner-border text-primary mb-3" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+                <p className="text-muted mb-0">Checking authentication status...</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

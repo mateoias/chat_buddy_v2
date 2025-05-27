@@ -1,6 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-// import './Header.css';
 
 function Header() {
   const navigate = useNavigate();
@@ -8,11 +7,7 @@ function Header() {
 
   useEffect(() => {
     checkLoginStatus();
-
-    // Listen for login/logout events
     window.addEventListener("loginStatusChanged", checkLoginStatus);
-
-    // Cleanup
     return () => {
       window.removeEventListener("loginStatusChanged", checkLoginStatus);
     };
@@ -52,37 +47,58 @@ function Header() {
   };
 
   return (
-    <header className="header">
-      <nav>
-        <ul className="nav-links">
-          <li><Link to="/">Home</Link></li>
-          <li><Link to="/about">About</Link></li>
-          <li><Link to="/faqs">Language Learning FAQs</Link></li>
+    <header className="app-header fixed-top">
+      <nav className="navbar navbar-expand-lg h-100">
+        <div className="container-fluid">
+          {/* Brand */}
+          <Link className="navbar-brand fw-bold text-brand" to="/">
+            🗣️ LangAI
+          </Link>
 
-          {/* Always show Chat link */}
-          <li><Link to="/chat">Chat</Link></li>
+          {/* Mobile toggle button */}
+          <button 
+            className="navbar-toggler" 
+            type="button" 
+            data-bs-toggle="collapse" 
+            data-bs-target="#navbarNav"
+            aria-controls="navbarNav" 
+            aria-expanded="false" 
+            aria-label="Toggle navigation"
+          >
+            <span className="navbar-toggler-icon"></span>
+          </button>
 
-          {/* Login or Logout button */}
-          {!loggedIn ? (
-            <li><Link to="/login">Login</Link></li>
-          ) : (
-            <li>
-              <button 
-                onClick={handleLogout} 
-                className="logout-button"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'white',
-                  cursor: 'pointer',
-                  textDecoration: 'underline'
-                }}
-              >
-                Logout
-              </button>
-            </li>
-          )}
-        </ul>
+          {/* Navigation links */}
+          <div className="collapse navbar-collapse" id="navbarNav">
+            <ul className="navbar-nav mx-auto nav-links">
+              <li className="nav-item">
+                <Link className="nav-link" to="/">Home</Link>
+              </li>
+              <li className="nav-item">
+                <Link className="nav-link" to="/about">About</Link>
+              </li>
+              <li className="nav-item">
+                <Link className="nav-link" to="/chat">Practice</Link>
+              </li>
+            </ul>
+
+            {/* Auth buttons */}
+            <div className="d-flex">
+              {!loggedIn ? (
+                <Link to="/login" className="btn btn-outline-light">
+                  Login
+                </Link>
+              ) : (
+                <button 
+                  onClick={handleLogout} 
+                  className="btn btn-outline-light"
+                >
+                  Logout
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </nav>
     </header>
   );
