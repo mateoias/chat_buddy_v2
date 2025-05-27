@@ -1,102 +1,90 @@
-// src/components/Header.jsx
-import { Navbar, Nav, Container, Button } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+// import './Header.css';
 
 function Header() {
   const navigate = useNavigate();
   const [loggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => {
-    const checkLogin = () => {
-      const isLoggedIn = sessionStorage.getItem("loggedIn") === "true";
-      setLoggedIn(isLoggedIn);
-    };
+    checkLoginStatus();
 
-    checkLogin();
-    window.addEventListener("loginStatusChanged", checkLogin);
+    // Listen for login/logout events
+    window.addEventListener("loginStatusChanged", checkLoginStatus);
 
+    // Cleanup
     return () => {
-      window.removeEventListener("loginStatusChanged", checkLogin);
+      window.removeEventListener("loginStatusChanged", checkLoginStatus);
     };
   }, []);
 
-  const handleLogout = async () => {
-    sessionStorage.clear();
-    window.dispatchEvent(new Event("loginStatusChanged"));
+  const checkLoginStatus = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/get_user_info', {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      setLoggedIn(data.logged_in);
+    } catch (error) {
+      console.error('Error checking login status:', error);
+      setLoggedIn(false);
+    }
+  };
 
+  const handleLogout = async () => {
     try {
       const response = await fetch('http://localhost:5000/logout', { 
         method: 'POST', 
         credentials: 'include' 
       });
+      
       if (response.ok) {
         setLoggedIn(false);
+        window.dispatchEvent(new Event("loginStatusChanged"));
         navigate('/');
       } else {
         alert('Logout failed. Please try again.');
       }
     } catch (error) {
       console.error('Logout error:', error);
-      alert('Logout failed. Please try again.');
+      alert('Error during logout. Please try again.');
     }
   };
 
   return (
-    <Navbar 
-      expand="lg" 
-      className="app-header fixed-top" 
-      variant="dark"
-    >
-      <Container>
-        <Navbar.Brand as={Link} to="/" className="fw-bold fs-4">
-          <span className="text-brand">Language</span> Exchange AI
-        </Navbar.Brand>
-        
-        <Navbar.Toggle aria-controls="basic-navbar-nav" />
-        <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className="me-auto">
-            <Nav.Link as={Link} to="/" className="fw-medium">
-              Home
-            </Nav.Link>
-            <Nav.Link as={Link} to="/about" className="fw-medium">
-              About
-            </Nav.Link>
-            <Nav.Link as={Link} to="/faqs" className="fw-medium">
-              FAQs
-            </Nav.Link>
-            {loggedIn && (
-              <Nav.Link as={Link} to="/chat" className="fw-medium">
-                Chat
-              </Nav.Link>
-            )}
-          </Nav>
-          
-          <Nav className="ms-auto">
-            {!loggedIn ? (
-              <>
-                <Nav.Link as={Link} to="/login" className="fw-medium">
-                  Login
-                </Nav.Link>
-                <Nav.Link as={Link} to="/signup">
-                  <Button variant="primary" size="sm">
-                    Sign Up
-                  </Button>
-                </Nav.Link>
-              </>
-            ) : (
-              <Button 
-                variant="outline-light" 
-                size="sm" 
-                onClick={handleLogout}
+    <header className="header">
+      <nav>
+        <ul className="nav-links">
+          <li><Link to="/">Home</Link></li>
+          <li><Link to="/about">About</Link></li>
+          <li><Link to="/faqs">Language Learning FAQs</Link></li>
+
+          {/* Always show Chat link */}
+          <li><Link to="/chat">Chat</Link></li>
+
+          {/* Login or Logout button */}
+          {!loggedIn ? (
+            <li><Link to="/login">Login</Link></li>
+          ) : (
+            <li>
+              <button 
+                onClick={handleLogout} 
+                className="logout-button"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'white',
+                  cursor: 'pointer',
+                  textDecoration: 'underline'
+                }}
               >
                 Logout
-              </Button>
-            )}
-          </Nav>
-        </Navbar.Collapse>
-      </Container>
-    </Navbar>
+              </button>
+            </li>
+          )}
+        </ul>
+      </nav>
+    </header>
   );
 }
 

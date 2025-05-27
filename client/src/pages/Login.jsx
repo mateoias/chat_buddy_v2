@@ -1,40 +1,25 @@
-// src/pages/Login.jsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Container, Row, Col, Form, Button, Alert, Card } from 'react-bootstrap';
-import Layout from '../components/Layout';
+import { useNavigate, useLocation } from 'react-router-dom';
+import './Login.css';
 
-function Login() {
+function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [nativeLang, setNativeLang] = useState('en');
   const [targetLang, setTargetLang] = useState('es');
-  const [loading, setLoading] = useState(false);
-  const [showLoginMessage, setShowLoginMessage] = useState(false);
-  const [error, setError] = useState('');
-  
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [showLoginMessage, setShowLoginMessage] = useState(false);
+  
   useEffect(() => {
     if (location.state?.from) {
       setShowLoginMessage(true);
     }
   }, [location.state]);
 
-  const languageOptions = [
-    { value: 'zh', label: 'Chinese' },
-    { value: 'en', label: 'English' },
-    { value: 'fr', label: 'French' },
-    { value: 'de', label: 'German' },
-    { value: 'it', label: 'Italian' },
-    { value: 'es', label: 'Spanish' }
-  ];
-
   const handleLogin = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
 
     const payload = {
       username,
@@ -47,144 +32,103 @@ function Login() {
       const response = await fetch('http://localhost:5000/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        credentials: 'include', // important for Flask session
         body: JSON.stringify(payload)
       });
 
       const result = await response.json();
       if (result.success) {
-        sessionStorage.setItem('loggedIn', 'true');
-        sessionStorage.setItem('username', username);
-        sessionStorage.setItem('nativeLang', nativeLang);
-        sessionStorage.setItem('targetLang', targetLang);
+        // No more sessionStorage - server manages everything
+        // Just trigger login status change event
         window.dispatchEvent(new Event("loginStatusChanged"));
-        
+        console.log("Login success! Navigating to chat...");
         const from = location.state?.from?.pathname || '/chat';
         navigate(from, { replace: true });
+        console.log("Navigated to", from);
       } else {
-        setError(result.message || 'Login failed. Please try again.');
+        alert(result.message);
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('Server error during login. Please try again.');
-    } finally {
-      setLoading(false);
+      alert('Server error during login.');
     }
   };
 
   return (
-    <Layout title="Login" subtitle="Sign in to start practicing">
-      <Row className="justify-content-center">
-        <Col md={8} lg={6}>
-          {showLoginMessage && (
-            <Alert variant="info" className="mb-4">
-              Please log in to continue to the chat.
-            </Alert>
-          )}
-          
-          {error && (
-            <Alert variant="danger" className="mb-4">
-              {error}
-            </Alert>
-          )}
+    <div className="login-page">
+      <h2>Login</h2>
+      {showLoginMessage && (
+        <div className="login-warning" style={{ color: 'red', marginBottom: '1em' }}>
+          Please log in to continue.
+        </div>
+      )}
+      <form onSubmit={handleLogin} className="login-form">
+        <div className="form-row">
+          <label>
+            Username:
+            <input 
+              type="text"
+              name="username"
+              value={username}
+              autoComplete="username"
+              onChange={(e) => setUsername(e.target.value)} 
+              required 
+            />
+          </label>
+          <label>
+            Password:
+            <input 
+              type="password"
+              name="password"
+              value={password}
+              autoComplete="current-password"
+              onChange={(e) => setPassword(e.target.value)} 
+              required 
+            />
+          </label>
+        </div>
 
-          <Card className="form-section border-0">
-            <Card.Body>
-              <Form onSubmit={handleLogin}>
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Username</Form.Label>
-                      <Form.Control
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        required
-                        disabled={loading}
-                        autoComplete="username"
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Password</Form.Label>
-                      <Form.Control
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        disabled={loading}
-                        autoComplete="current-password"
-                      />
-                    </Form.Group>
-                  </Col>
-                </Row>
+        <div className="form-row">
+          <label>
+            Native Language:
+            <select value={nativeLang} onChange={(e) => setNativeLang(e.target.value)}>
+              <option value="zh">Chinese</option>
+              <option value="en">English</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="it">Italian</option>
+              <option value="es">Spanish</option>
+            </select>
+          </label>
 
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Native Language</Form.Label>
-                      <Form.Select 
-                        value={nativeLang} 
-                        onChange={(e) => setNativeLang(e.target.value)}
-                        disabled={loading}
-                      >
-                        {languageOptions.map(lang => (
-                          <option key={lang.value} value={lang.value}>
-                            {lang.label}
-                          </option>
-                        ))}
-                      </Form.Select>
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-4">
-                      <Form.Label>Target Language</Form.Label>
-                      <Form.Select 
-                        value={targetLang} 
-                        onChange={(e) => setTargetLang(e.target.value)}
-                        disabled={loading}
-                      >
-                        {languageOptions.map(lang => (
-                          <option key={lang.value} value={lang.value}>
-                            {lang.label}
-                          </option>
-                        ))}
-                      </Form.Select>
-                    </Form.Group>
-                  </Col>
-                </Row>
+          <label>
+            Target Language:
+            <select value={targetLang} onChange={(e) => setTargetLang(e.target.value)}>
+              <option value="zh">Chinese</option>
+              <option value="en">English</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="it">Italian</option>
+              <option value="es">Spanish</option>
+            </select>
+          </label>
+        </div>
 
-                <div className="d-grid">
-                  <Button 
-                    type="submit" 
-                    variant="primary" 
-                    size="lg"
-                    disabled={loading}
-                  >
-                    {loading ? 'Logging in...' : 'Login'}
-                  </Button>
-                </div>
-              </Form>
+        <button type="submit">Login</button>
+      </form>
 
-              <div className="text-center mt-4">
-                <p className="text-secondary">
-                  Don't have an account?{' '}
-                  <Link 
-                    to="/signup" 
-                    state={{ from: location.state?.from }}
-                    className="text-decoration-none"
-                  >
-                    Sign up here
-                  </Link>
-                </p>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    </Layout>
+      <p>
+        Don't have an account?{' '}
+        <button
+          type="button"
+          className="link-button"
+          onClick={() => navigate('/signup', { state: { from: location.state?.from } })}
+        >
+          Sign Up
+        </button>
+      </p>
+    </div>
   );
 }
 
-export default Login;
+export default LoginPage;

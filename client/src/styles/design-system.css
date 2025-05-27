@@ -206,4 +206,72 @@
   .form-section {
     padding: var(--space-lg);
   }
+  /* Add to your design-system.css */
+
+/* Enhanced Mobile Responsiveness */
+@media (max-width: 576px) {
+  .chat-container {
+    height: 85vh !important; /* More screen real estate on mobile */
+    margin: 0 -15px; /* Full width on mobile */
+  }
+  
+  .message-bubble {
+    max-width: 95% !important; /* Wider bubbles on small screens */
+    font-size: 0.95rem !important; /* Slightly larger text on mobile */
+  }
+  
+  .page-content {
+    padding: 0 var(--space-xs) !important; /* Minimal side padding */
+  }
+}
+
+/* Accessibility Improvements */
+:root {
+  --focus-ring: 0 0 0 3px rgba(76, 110, 245, 0.3);
+  --high-contrast-border: 2px solid #000;
+}
+
+/* Enhanced Focus Indicators */
+.btn:focus,
+.form-control:focus {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .message-bubble {
+    border: var(--high-contrast-border);
+  }
+  
+  .btn {
+    border-width: 2px;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Larger Touch Targets */
+@media (pointer: coarse) {
+  .btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px 16px;
+  }
+}
+
+/* Font Size Preferences */
+@media (prefers-reduced-data: reduce) {
+  /* Reduce font loading for data-conscious users */
+  .display-4 {
+    font-size: 2rem;
+  }
+}
 }
