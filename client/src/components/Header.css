@@ -1,107 +1,184 @@
-/* src/components/Header.css */
-
+/* Header Styles */
 .header {
-  background-color: #1a1a1a;
-  height: 4rem;
-  padding: 0 1rem;
-  width: 100%;
   position: fixed;
   top: 0;
   left: 0;
+  right: 0;
+  height: 4rem;
+  background-color: #1a1a1a;
+  border-bottom: 1px solid #333;
   z-index: 1000;
   display: flex;
   align-items: center;
-}
-
-.header-nav {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  gap: 1rem;
-}
-
-.sidebar-toggle {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 4px;
-  transition: background-color 0.2s ease;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  padding: 0 2rem;
 }
 
-.sidebar-toggle:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.sidebar-toggle:focus {
-  outline: 2px solid #646cff;
-  outline-offset: 2px;
+/* Navigation */
+.header nav {
+  width: 100%;
+  max-width: 1400px;
 }
 
 .nav-links {
-  list-style: none;
   display: flex;
-  gap: 1.5rem;
+  align-items: center;
   justify-content: center;
-  padding: 0;
+  gap: 2rem;
+  list-style: none;
   margin: 0;
-  flex-grow: 1;
+  padding: 0;
 }
 
-.nav-links li a {
-  color: white;
+.nav-links li {
+  margin: 0;
+}
+
+.nav-links a {
+  color: #fff;
   text-decoration: none;
   font-weight: 500;
-  transition: color 0.2s ease;
-}
-
-.nav-links li a:hover {
-  color: #646cff;
-  text-decoration: underline;
-}
-
-.logout-button {
-  background: none;
-  border: 1px solid #646cff;
-  color: white;
+  font-size: 1rem;
   padding: 0.5rem 1rem;
-  cursor: pointer;
   border-radius: 4px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.nav-links a:hover {
+  color: #646cff;
+  background-color: rgba(100, 108, 255, 0.1);
+}
+
+/* Active link indicator */
+.nav-links a.active {
+  color: #646cff;
+}
+
+.nav-links a.active::after {
+  content: '';
+  position: absolute;
+  bottom: -0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 2px;
+  background-color: #646cff;
+}
+
+/* Logout Button */
+.logout-button {
+  background-color: transparent;
+  color: #fff;
+  border: 1px solid #333;
+  padding: 0.5rem 1rem;
   font-size: 0.9rem;
-  transition: all 0.2s ease;
+  border-radius: 4px;
+  transition: all 0.3s ease;
 }
 
 .logout-button:hover {
-  background-color: #646cff;
-  color: white;
+  background-color: #ff4444;
+  border-color: #ff4444;
+  color: #fff;
 }
 
-/* Responsive styles */
+/* Sidebar Toggle in Header */
+.sidebar-toggle-header {
+  position: absolute;
+  left: 1rem;
+  background-color: transparent;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.3s ease;
+}
+
+.sidebar-toggle-header:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.sidebar-toggle-header .hamburger-line {
+  width: 24px;
+  height: 3px;
+  background-color: #fff;
+  transition: all 0.3s ease;
+}
+
+/* Mobile Menu Toggle */
+.mobile-menu-toggle {
+  display: none;
+  background-color: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+/* Responsive Styles */
 @media (max-width: 768px) {
   .header {
-    padding: 0 0.5rem;
+    padding: 0 1rem;
   }
-  
+
   .nav-links {
     gap: 1rem;
+  }
+
+  .nav-links a {
     font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
   }
 }
 
-@media (max-width: 480px) {
-  .nav-links {
-    gap: 0.5rem;
-    font-size: 0.8rem;
+@media (max-width: 600px) {
+  .mobile-menu-toggle {
+    display: block;
+    position: absolute;
+    right: 1rem;
   }
-  
-  .nav-links li a {
-    padding: 0.25rem;
+
+  .header nav {
+    position: relative;
+  }
+
+  .nav-links {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: #1a1a1a;
+    flex-direction: column;
+    padding: 1rem;
+    border-bottom: 1px solid #333;
+    transform: translateY(-100%);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .nav-links.mobile-open {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .nav-links li {
+    width: 100%;
+  }
+
+  .nav-links a {
+    display: block;
+    width: 100%;
+    text-align: center;
+  }
+
+  .logout-button {
+    width: 100%;
   }
 }

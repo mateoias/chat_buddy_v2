@@ -1,116 +1,61 @@
-// src/components/Sidebar.jsx
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useSidebar } from '../contexts/SidebarContext';
 import './Sidebar.css';
 
-const sidebarData = {
-  levels: [
-    { name: 'Beginner (A1-A2)', link: '/faqs#beginner' },
-    { name: 'Intermediate (B1-B2)', link: '/faqs#intermediate' },
-    { name: 'Advanced (C1-C2)', link: '/faqs#advanced' }
-  ],
-  popular: [
-    { name: 'Travel & Culture', link: '/faqs#travel' },
-    { name: 'Food & Cooking', link: '/faqs#food' },
-    { name: 'Work & Business', link: '/faqs#work' },
-    { name: 'Hobbies & Entertainment', link: '/faqs#hobbies' },
-    { name: 'Daily Conversations', link: '/faqs#daily' },
-    { name: 'Family & Friends', link: '/faqs#family' }
-  ],
-  learning: [
-    { name: 'Grammar Tips', link: '/faqs#grammar' },
-    { name: 'Pronunciation Guide', link: '/faqs#pronunciation' },
-    { name: 'Common Mistakes', link: '/faqs#mistakes' },
-    { name: 'Study Strategies', link: '/faqs#study' },
-    { name: 'Vocabulary Building', link: '/faqs#vocabulary' },
-    { name: 'Listening Practice', link: '/faqs#listening' }
-  ]
-};
-
-function Sidebar() {
-  const { isOpen, closeSidebar } = useSidebar();
-
-  // Close sidebar on ESC key
-  useEffect(() => {
-    const handleEsc = (e) => {
-      if (e.key === 'Escape') {
-        closeSidebar();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleEsc);
-      document.body.style.overflow = 'hidden'; // Prevent body scroll on mobile
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEsc);
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen, closeSidebar]);
-
-  if (!isOpen) return null;
-
+function Sidebar({ isCollapsed, onToggle }) {
   return (
     <>
-      {/* Backdrop for mobile/tablet */}
-      <div className="sidebar-backdrop" onClick={closeSidebar} />
-      
       {/* Sidebar */}
-      <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
-        <div className="sidebar-header">
-          <h3>Topics</h3>
-          <button 
-            className="sidebar-close" 
-            onClick={closeSidebar}
-            aria-label="Close sidebar"
-          >
-            ×
-          </button>
-        </div>
-
-        <div className="sidebar-content">
-          <section className="sidebar-section">
-            <h4>By Level</h4>
-            <ul>
-              {sidebarData.levels.map((item, index) => (
-                <li key={index}>
-                  <Link to={item.link} onClick={closeSidebar}>
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
+      <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+        <nav className="sidebar-nav">
+          <h3 className="sidebar-title">Quick Links</h3>
+          
+          <div className="sidebar-section">
+            <h4>Learning Levels</h4>
+            <ul className="sidebar-links">
+              <li><Link to="/beginner">Beginner</Link></li>
+              <li><Link to="/intermediate">Intermediate</Link></li>
+              <li><Link to="/advanced">Advanced</Link></li>
             </ul>
-          </section>
+          </div>
 
-          <section className="sidebar-section">
-            <h4>Popular Topics</h4>
-            <ul>
-              {sidebarData.popular.map((item, index) => (
-                <li key={index}>
-                  <Link to={item.link} onClick={closeSidebar}>
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
+          <div className="sidebar-section">
+            <h4>Resources</h4>
+            <ul className="sidebar-links">
+              <li><Link to="/grammar-guide">Grammar Guide</Link></li>
+              <li><Link to="/vocabulary">Vocabulary</Link></li>
+              <li><Link to="/practice-exercises">Practice Exercises</Link></li>
+              <li><Link to="/cultural-notes">Cultural Notes</Link></li>
             </ul>
-          </section>
+          </div>
 
-          <section className="sidebar-section">
-            <h4>Language Learning</h4>
-            <ul>
-              {sidebarData.learning.map((item, index) => (
-                <li key={index}>
-                  <Link to={item.link} onClick={closeSidebar}>
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
+          <div className="sidebar-section">
+            <h4>Community</h4>
+            <ul className="sidebar-links">
+              <li><Link to="/forums">Forums</Link></li>
+              <li><Link to="/study-groups">Study Groups</Link></li>
+              <li><Link to="/language-partners">Language Partners</Link></li>
             </ul>
-          </section>
-        </div>
+          </div>
+
+          <div className="sidebar-section">
+            <h4>Support</h4>
+            <ul className="sidebar-links">
+              <li><Link to="/faqs">FAQs</Link></li>
+              <li><Link to="/contact">Contact Us</Link></li>
+              <li><Link to="/feedback">Give Feedback</Link></li>
+            </ul>
+          </div>
+        </nav>
       </aside>
+
+      {/* Overlay for mobile */}
+      {!isCollapsed && (
+        <div 
+          className="sidebar-overlay"
+          onClick={onToggle}
+        ></div>
+      )}
     </>
   );
 }

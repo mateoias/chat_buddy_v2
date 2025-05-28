@@ -1,32 +1,40 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import './Header.css';
 
-function Header() {
+function Header({ onSidebarToggle, showSidebarToggle = false }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loggedIn, setLoggedIn] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    checkLoginStatus();
-    window.addEventListener("loginStatusChanged", checkLoginStatus);
+    const checkLogin = () => {
+      const isLoggedIn = sessionStorage.getItem("loggedIn") === "true";
+      setLoggedIn(isLoggedIn);
+    };
+
+    // Check immediately on mount
+    checkLogin();
+
+    // Listen for login/logout events
+    window.addEventListener("loginStatusChanged", checkLogin);
+
+    // Cleanup
     return () => {
-      window.removeEventListener("loginStatusChanged", checkLoginStatus);
+      window.removeEventListener("loginStatusChanged", checkLogin);
     };
   }, []);
 
-  const checkLoginStatus = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/get_user_info', {
-        credentials: 'include'
-      });
-      const data = await response.json();
-      setLoggedIn(data.logged_in);
-    } catch (error) {
-      console.error('Error checking login status:', error);
-      setLoggedIn(false);
-    }
-  };
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location]);
 
   const handleLogout = async () => {
+    sessionStorage.clear();
+    window.dispatchEvent(new Event("loginStatusChanged"));
+
     try {
       const response = await fetch('http://localhost:5000/logout', { 
         method: 'POST', 
@@ -35,70 +43,61 @@ function Header() {
       
       if (response.ok) {
         setLoggedIn(false);
-        window.dispatchEvent(new Event("loginStatusChanged"));
         navigate('/');
       } else {
         alert('Logout failed. Please try again.');
       }
     } catch (error) {
       console.error('Logout error:', error);
-      alert('Error during logout. Please try again.');
+      alert('Logout failed. Please try again.');
     }
   };
 
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const isActive = (path) => {
+    return location.pathname === path ? 'active' : '';
+  };
+
   return (
-    <header className="app-header fixed-top">
-      <nav className="navbar navbar-expand-lg h-100">
-        <div className="container-fluid">
-          {/* Brand */}
-          <Link className="navbar-brand fw-bold text-brand" to="/">
-            🗣️ LangAI
-          </Link>
-
-          {/* Mobile toggle button */}
+    <header className="header">
+      <nav>
+        {/* Sidebar Toggle - only show on pages with sidebar */}
+        {showSidebarToggle && (
           <button 
-            className="navbar-toggler" 
-            type="button" 
-            data-bs-toggle="collapse" 
-            data-bs-target="#navbarNav"
-            aria-controls="navbarNav" 
-            aria-expanded="false" 
-            aria-label="Toggle navigation"
+            className="sidebar-toggle-header"
+            onClick={onSidebarToggle}
+            aria-label="Toggle sidebar"
           >
-            <span className="navbar-toggler-icon"></span>
+            <span className="hamburger-line"></span>
+            <span className="hamburger-line"></span>
+            <span className="hamburger-line"></span>
           </button>
+        )}
+        
+        <button 
+          className="mobile-menu-toggle"
+          onClick={toggleMobileMenu}
+          aria-label="Toggle mobile menu"
+        >
+          ☰
+        </button>
+        
+        <ul className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+          <li><Link to="/" className={isActive('/')}>Home</Link></li>
+          <li><Link to="/about" className={isActive('/about')}>About</Link></li>
+          <li><Link to="/faqs" className={isActive('/faqs')}>FAQs</Link></li>
+          <li><Link to="/chat" className={isActive('/chat')}>Chat</Link></li>
 
-          {/* Navigation links */}
-          <div className="collapse navbar-collapse" id="navbarNav">
-            <ul className="navbar-nav mx-auto nav-links">
-              <li className="nav-item">
-                <Link className="nav-link" to="/">Home</Link>
-              </li>
-              <li className="nav-item">
-                <Link className="nav-link" to="/about">About</Link>
-              </li>
-              <li className="nav-item">
-                <Link className="nav-link" to="/chat">Practice</Link>
-              </li>
-            </ul>
-
-            {/* Auth buttons */}
-            <div className="d-flex">
-              {!loggedIn ? (
-                <Link to="/login" className="btn btn-outline-light">
-                  Login
-                </Link>
-              ) : (
-                <button 
-                  onClick={handleLogout} 
-                  className="btn btn-outline-light"
-                >
-                  Logout
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+          {/* Login or Logout button */}
+          {!loggedIn ? (
+            <li><Link to="/login" className={isActive('/login')}>Login</Link></li>
+          ) : (
+            <li><button onClick={handleLogout} className="logout-button">Logout</button></li>
+          )}
+        </ul>
       </nav>
     </header>
   );

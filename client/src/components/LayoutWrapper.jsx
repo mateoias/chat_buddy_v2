@@ -1,15 +1,30 @@
-// src/components/LayoutWrapper.jsx
-import { useSidebar } from '../contexts/SidebarContext';
-import Sidebar from './Sidebar';
+import { useState } from 'react';
+import Header from './Header';
+import Sidebar from './Sidebar.jsx';
 
 function LayoutWrapper({ children, showSidebar = false }) {
-  const { isOpen } = useSidebar();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const handleSidebarToggle = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
 
   return (
     <>
-      {showSidebar && <Sidebar />}
-      <div className={`main-content-wrapper ${showSidebar && isOpen ? 'sidebar-active' : ''}`}>
-        {children}
+      <Header 
+        showSidebarToggle={showSidebar} 
+        onSidebarToggle={handleSidebarToggle} 
+      />
+      <div className={`layout-wrapper ${showSidebar ? 'with-sidebar' : ''}`}>
+        {showSidebar && (
+          <Sidebar 
+            isCollapsed={sidebarCollapsed} 
+            onToggle={handleSidebarToggle} 
+          />
+        )}
+        <main className={`main-content ${showSidebar && !sidebarCollapsed ? 'sidebar-active' : ''}`}>
+          {children}
+        </main>
       </div>
     </>
   );
