@@ -3,6 +3,14 @@ import { Link } from 'react-router-dom';
 import './Sidebar.css';
 
 function Sidebar({ isCollapsed, onToggle }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const toggleExpanded = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsExpanded(!isExpanded);
+  };
+
   return (
     <>
       {/* Sidebar */}
@@ -20,21 +28,23 @@ function Sidebar({ isCollapsed, onToggle }) {
           </div>
 
           <div className="sidebar-section">
-            <h4>Resources</h4>
+            <h4>Readings</h4>
             <ul className="sidebar-links">
-              <li><Link to="/grammar-guide">Grammar Guide</Link></li>
-              <li><Link to="/vocabulary">Vocabulary</Link></li>
-              <li><Link to="/practice-exercises">Practice Exercises</Link></li>
-              <li><Link to="/cultural-notes">Cultural Notes</Link></li>
-            </ul>
-          </div>
-
-          <div className="sidebar-section">
-            <h4>Community</h4>
-            <ul className="sidebar-links">
-              <li><Link to="/forums">Forums</Link></li>
-              <li><Link to="/study-groups">Study Groups</Link></li>
-              <li><Link to="/language-partners">Language Partners</Link></li>
+              <li className="expandable-item">
+                <Link to="/readings" className="expandable-link">
+                  <span className="link-text">
+                    {isExpanded ? "And Now For Something Completely Different" : "And Now For..."}
+                  </span>
+                  <button 
+                    className={`expand-toggle ${isExpanded ? 'expanded' : ''}`}
+                    onClick={toggleExpanded}
+                    aria-label={isExpanded ? "Collapse" : "Expand"}
+                  >
+                    ▶
+                  </button>
+                </Link>
+              </li>
+              <li><Link to="/readings">Hot Topics</Link></li>
             </ul>
           </div>
 

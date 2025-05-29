@@ -122,3 +122,54 @@
 .sidebar::-webkit-scrollbar-thumb:hover {
   background: #444;
 }
+
+/* Expandable Item Styles */
+.expandable-item {
+  position: relative;
+}
+
+.expandable-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-right: 2rem !important;
+}
+
+.link-text {
+  flex: 1;
+}
+
+.expand-toggle {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 0.75rem;
+  padding: 0.25rem;
+  cursor: pointer;
+  transition: transform 0.3s ease, color 0.2s ease;
+  line-height: 1;
+}
+
+.expand-toggle:hover {
+  color: #646cff;
+}
+
+.expand-toggle.expanded {
+  transform: rotate(90deg);
+}
+
+/* Prevent the button from triggering link hover styles */
+.expandable-link:hover .expand-toggle {
+  background-color: transparent;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .expand-toggle {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+}

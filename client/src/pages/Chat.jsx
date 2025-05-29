@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { franc } from 'franc-min';
-import PersonalizationModal from '../components/PersonalizationModal';
 import './Chat.css';
 
 // Language code mapping
@@ -18,7 +17,6 @@ function Chat() {
   const [isLoading, setIsLoading] = useState(false);
   const [playingAudioId, setPlayingAudioId] = useState(null);
   const [isProcessingAudio, setIsProcessingAudio] = useState(false);
-  const [showPersonalization, setShowPersonalization] = useState(false);
   const [isCheckingUser, setIsCheckingUser] = useState(true);
   const messagesEndRef = useRef(null);
   const audioRef = useRef(null);
@@ -38,13 +36,9 @@ function Chat() {
       if (data.logged_in) {
         setUserInfo(data);
         
-        // Check if user has personalization data
-        if (!data.personalization || !data.personalization.completed) {
-          setShowPersonalization(true);
-        } else {
-          // Use personalization to create a customized welcome message
-          initializePersonalizedChat(data);
-        }
+    initializePersonalizedChat(data);
+
+
       }
     } catch (err) {
       console.error('Error getting user info:', err);
@@ -72,22 +66,6 @@ function Chat() {
     }
     
     setMessages([{ id: 1, text: welcomeMessage, sender: 'bot' }]);
-  };
-
-  const handlePersonalizationComplete = (personalData) => {
-    // Update user info with personalization
-    const updatedUserInfo = { ...userInfo, personalization: { ...personalData, completed: true } };
-    setUserInfo(updatedUserInfo);
-    setShowPersonalization(false);
-    
-    // Initialize chat with personalized message
-    initializePersonalizedChat(updatedUserInfo);
-  };
-
-  const handlePersonalizationSkip = () => {
-    setShowPersonalization(false);
-    // Use default welcome message
-    setMessages([{ id: 1, text: 'Hello! What would you like to talk about today?', sender: 'bot' }]);
   };
 
   // Scroll to bottom when messages update
@@ -314,13 +292,6 @@ function Chat() {
 
   return (
     <div className="chat-page">
-      {/* Show personalization modal if needed */}
-      {showPersonalization && (
-        <PersonalizationModal
-          onComplete={handlePersonalizationComplete}
-          onSkip={handlePersonalizationSkip}
-        />
-      )}
       
       <div className="chat-container">
         {/* Simple user info bar */}

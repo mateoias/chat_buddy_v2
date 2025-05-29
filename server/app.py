@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, session, send_file
 from flask_cors import CORS
-from flask_session import Session
+# from flask_session import Session
 from openai import OpenAI
 import json
 import os
@@ -18,9 +18,10 @@ client = OpenAI(api_key=api_key)
 
 app = Flask(__name__)
 app.secret_key = "mateoias"  # Replace with a strong secret key
-app.config["SESSION_TYPE"] = "filesystem"
-Session(app)
-CORS(app, supports_credentials=True)
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["PERMANENT_SESSION_LIFETIME"] = 86400 
+CORS(app, supports_credentials=True, origins=["http://localhost:5173", "http://localhost:5174"])
 USER_FILE = 'users.json'
 
 # Azure Speech Configuration
@@ -65,16 +66,43 @@ def signup():
     data = request.json
     email = data.get('email')
     password = data.get('password')
+    native_lang = data.get('nativeLang', 'en')  # Get from request
+    target_lang = data.get('targetLang', 'es')  # Get from request
 
     users = load_users()
 
     if email in users:
         return jsonify({'success': False, 'message': 'User already exists'}), 400
 
-    users[email] = {'password': password}
+    # Create new user with language preferences
+    users[email] = {
+        'password': password,
+        'native_lang': native_lang,
+        'target_lang': target_lang,
+        'personalization': {}
+    }
     save_users(users)
+    
+    # Auto-login with their actual language choices
+    session['user_id'] = email
+    session['username'] = email
+    session['native_lang'] = native_lang  # Use actual choice
+    session['target_lang'] = target_lang  # Use actual choice
+    session['user_background'] = {
+        'native_lang': native_lang,
+        'target_lang': target_lang,
+        'skill_level': 'beginner',
+        'interests': [],
+        'learning_goals': 'conversation practice'
+    }
+    session['current_conversation'] = []
+    session.modified = True
 
-    return jsonify({'success': True, 'message': 'Account created'})
+    return jsonify({
+        'success': True, 
+        'message': 'Account created and logged in',
+        'auto_logged_in': True
+    })
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -84,45 +112,105 @@ def login():
     native_lang = data.get('nativeLang')
     target_lang = data.get('targetLang')
 
-    # In production: check username/password securely!
-    if username and password:
+    # Load users
+    users = load_users()
+    
+    # Check credentials
+    if username in users and users[username]['password'] == password:
+        user_data = users[username]
+        
         # Store user session data
         session['user_id'] = username
+        session['username'] = username
         session['native_lang'] = native_lang
         session['target_lang'] = target_lang
         
-        # Initialize user background (later from Neo4j)
+        # Initialize user background
         session['user_background'] = {
             'native_lang': native_lang,
             'target_lang': target_lang,
-            'skill_level': 'beginner',  # Will come from Neo4j later
-            'interests': ['travel', 'food'],  # Will come from Neo4j later
-            'learning_goals': 'conversation practice'  # Will come from Neo4j later
+            'skill_level': 'beginner',
+            'interests': ['travel', 'food'],
+            'learning_goals': 'conversation practice'
         }
+        
+        # IMPORTANT: Load personalization from user data if it exists
+        if 'personalization' in user_data and user_data['personalization']:
+            print(f"Loading personalization from file: {user_data['personalization']}")
+            session['user_background']['personalization'] = user_data['personalization']
+            session['personalization'] = user_data['personalization']
+            
+            # Also add the name to user_background root if it exists
+            if 'name' in user_data['personalization']:
+                session['user_background']['name'] = user_data['personalization']['name']
+        else:
+            print("No personalization found in user file")
         
         # Initialize empty conversation
         session['current_conversation'] = []
         session.modified = True
         
-        return jsonify({'success': True, 'message': 'Login successful'})
+        # Check if user has completed personalization
+        has_personalization = user_data.get('personalization', {}).get('completed', False)
+        
+        print(f"Login complete - session user_background: {session['user_background']}")
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Login successful',
+            'needs_personalization': not has_personalization
+        })
     else:
-        return jsonify({'success': False, 'message': 'Invalid login data'}), 400
+        return jsonify({'success': False, 'message': 'Invalid username or password'}), 400
     
-
 @app.route('/save_personalization', methods=['POST'])
 def save_personalization():
     try:
         data = request.get_json()
-        username = session.get('username')
+        user_id = session.get('user_id') or session.get('username')
         
-        if not username:
+        if not user_id:
             return jsonify({'success': False, 'message': 'Not logged in'}), 401
         
-        # TODO: Save personalization data to database or file
-        # For now, we'll store in session
+        print(f"Saving personalization for user: {user_id}")  # Debug
+        
+        # Load users
+        users = load_users()
+        
+        # Make sure user exists
+        if user_id not in users:
+            print(f"User {user_id} not found in users file")  # Debug
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+        
+        # Save personalization to user data
+        users[user_id]['personalization'] = data
+        users[user_id]['personalization']['completed'] = True
+        
+        # Save to file
+        save_users(users)
+        print(f"Saved personalization to file for {user_id}")  # Debug
+        
+        # Also store in session for immediate use
         session['personalization'] = data
         session['personalization']['completed'] = True
         session.modified = True
+        
+        # Update user background for chat bot
+        if 'user_background' not in session:
+            session['user_background'] = {
+                    'native_lang': session.get('native_lang', 'en'),
+                    'target_lang': session.get('target_lang', 'es'),
+                    'skill_level': 'beginner'
+    }
+            
+        session['user_background'].update({
+            'name': data.get('name', ''),
+
+        })
+        session['user_background']['personalization'] = data
+
+        
+        print("Session updated successfully")  # Debug
         
         return jsonify({
             'success': True, 
@@ -132,8 +220,9 @@ def save_personalization():
         
     except Exception as e:
         print(f"Error saving personalization: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': 'Failed to save'}), 500
-
 @app.route('/logout', methods=['POST'])
 def logout():
     try:
@@ -142,36 +231,6 @@ def logout():
     except Exception as e:
         print("Logout failed:", str(e))
         return jsonify({"error": "Logout failed"}), 500
-
-@app.route('/start_chat', methods=['POST'])
-def start_chat():
-    """Initialize a new chat session with user background"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'Not logged in'}), 401
-    
-    # TODO: Later - pull from Neo4j
-    # user_background = neo4j_client.get_user_background(user_id)
-    
-    # For now, use session data and some defaults
-    user_background = {
-        'native_lang': session.get('native_lang', 'en'),
-        'target_lang': session.get('target_lang', 'es'),
-        'skill_level': 'beginner',  # Will come from Neo4j later
-        'interests': ['travel', 'food'],  # Will come from Neo4j later
-        'learning_goals': 'conversation practice'  # Will come from Neo4j later
-    }
-    
-    # Reset conversation and set background
-    session['current_conversation'] = []
-    session['user_background'] = user_background
-    session.modified = True
-    
-    return jsonify({
-        'success': True, 
-        'message': 'Chat initialized',
-        'background': user_background
-    })
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -189,12 +248,32 @@ def chat():
         # Get current conversation and user background from session
         conversation = session.get("current_conversation", [])
         user_background = session.get("user_background", {})
-
+        
+        # DEBUG: Let's see what we have
+        print(f"\n=== CHAT DEBUG ===")
+        print(f"User ID: {user_id}")
+        print(f"user_background from session: {user_background}")
+        print(f"Has personalization in user_background: {'personalization' in user_background}")
+        print(f"Has personalization in session root: {'personalization' in session}")
+        
+        if 'personalization' not in user_background and 'personalization' in session:
+            print("Copying personalization from session to user_background")
+            user_background['personalization'] = session['personalization']
+            # IMPORTANT: Update the session with the modified user_background
+            session['user_background'] = user_background
+            session.modified = True
+        
+        # DEBUG: Check after copy
+        print(f"user_background after copy: {user_background}")
+        
         # Add user message to conversation
         conversation.append({"role": "user", "content": user_input})
 
         # Create bot with user background for personalization
         bot = BaseBot(conversation, client, user_background=user_background)
+        
+        # DEBUG: Verify bot received it
+        print(f"Bot's user_background: {bot.user_background}")
         
         # For now, use simple conversation system message
         # Later we'll add intent detection back
@@ -212,7 +291,10 @@ def chat():
 
     except Exception as e:
         print("Error during chat:", str(e))
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': 'Something went wrong on the server.'}), 500
+    
 
 @app.route('/text-to-speech', methods=['POST'])
 def text_to_speech():
@@ -324,19 +406,48 @@ def reset_chat():
 
 @app.route('/get_user_info', methods=['GET'])
 def get_user_info():
-    if 'username' not in session:
+    # Debug logging
+    print("Session contents:", dict(session))
+    
+    # Check both username and user_id for compatibility
+    user_id = session.get('username') or session.get('user_id')
+    
+    if not user_id:
         return jsonify({'logged_in': False})
     
-    return jsonify({
+    # Load user data from file
+    users = load_users()
+    user_data = users.get(user_id, {})
+    personalization = user_data.get('personalization', session.get('personalization', {}))
+
+    response_data = {
         'logged_in': True,
-        'username': session.get('username'),
+        'username': user_id,
         'background': {
-            'native_lang': session.get('native_lang', 'en'),
-            'target_lang': session.get('target_lang', 'es'),
+            'native_lang': user_data.get('native_lang', session.get('native_lang', 'en')),
+            'target_lang': user_data.get('target_lang', session.get('target_lang', 'es')),
             'skill_level': session.get('skill_level', 'beginner')
         },
-        'personalization': session.get('personalization', {}),
-        'conversation_length': len(session.get('messages', []))
+        'personalization': personalization,
+        'conversation_length': len(session.get('current_conversation', []))
+    }
+    
+    print(f"Returning user info: {response_data}")
+    return jsonify(response_data)
+
+
+@app.route('/get_personalization', methods=['GET'])
+def get_personalization():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'logged_in': False}), 401
+    
+    # For now, return from session. Later this will come from Neo4j
+    personalization = session.get('personalization', {})
+    
+    return jsonify({
+        'success': True,
+        'personalization': personalization
     })
 
 if __name__ == '__main__':

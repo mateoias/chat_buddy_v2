@@ -1,0 +1,40 @@
+.readings-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.readings-page h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  color: #fff;
+}
+
+.page-intro {
+  font-size: 1.2rem;
+  color: #ccc;
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.placeholder-message {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 3rem;
+  text-align: center;
+  margin: 2rem auto;
+  max-width: 600px;
+}
+
+.placeholder-message p {
+  color: #ccc;
+  font-size: 1.1rem;
+  margin: 0.5rem 0;
+}
+
+.placeholder-message p:first-child {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}

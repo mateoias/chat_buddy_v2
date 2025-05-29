@@ -7,6 +7,8 @@ import Layout from '../components/Layout';
 function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [nativeLang, setNativeLang] = useState('en');
+  const [targetLang, setTargetLang] = useState('es');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -32,19 +34,23 @@ function Signup() {
       const response = await fetch('http://localhost:5000/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, nativeLang, targetLang }),
       });
 
-      if (response.ok) {
-        navigate('/login', { 
-          state: { 
-            message: 'Account created successfully! Please log in.' 
-          }
-        });
-      } else {
-        const data = await response.json();
-        setError(data.message || 'Signup failed. Please try again.');
-      }
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Auto-login was successful on backend
+          sessionStorage.setItem('loggedIn', 'true');
+          window.dispatchEvent(new Event("loginStatusChanged"));
+          
+          // Redirect to personalization for new users
+          navigate('/personalization');
+        }
+        else {
+          const data = await response.json();
+          setError(data.message || 'Signup failed. Please try again.');
+        }
     } catch (err) {
       console.error('Signup error:', err);
       setError('Server error during signup. Please try again.');
@@ -113,6 +119,46 @@ function Signup() {
                     </Form.Group>
                   </Col>
                 </Row>
+                <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Native Language</Form.Label>
+                        <Form.Control
+                          as="select"
+                          value={nativeLang}
+                          onChange={(e) => setNativeLang(e.target.value)}
+                          required
+                          disabled={loading}
+                        >
+                          <option value="zh">🇨🇳 Chinese</option>
+                          <option value="en">🇺🇸 English</option>
+                          <option value="fr">🇫🇷 French</option>
+                          <option value="de">🇩🇪 German</option>
+                          <option value="it">🇮🇹 Italian</option>
+                          <option value="es">🇪🇸 Spanish</option>
+                        </Form.Control>
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-4">
+                        <Form.Label>Language to Learn</Form.Label>
+                        <Form.Control
+                          as="select"
+                          value={targetLang}
+                          onChange={(e) => setTargetLang(e.target.value)}
+                          required
+                          disabled={loading}
+                        >
+                          <option value="zh">🇨🇳 Chinese</option>
+                          <option value="en">🇺🇸 English</option>
+                          <option value="fr">🇫🇷 French</option>
+                          <option value="de">🇩🇪 German</option>
+                          <option value="it">🇮🇹 Italian</option>
+                          <option value="es">🇪🇸 Spanish</option>
+                        </Form.Control>
+                      </Form.Group>
+                    </Col>
+                  </Row>
 
                 <div className="d-grid">
                   <Button 

@@ -8,8 +8,10 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Chat from './pages/Chat';
 import FAQs from './pages/FAQs';
+import Personalization from './pages/Personalization';
 import Beginner from './pages/Beginner';
 import Advanced from './pages/Advanced';
+import Readings from './pages/Readings';
 
 function App() {
   return (
@@ -92,6 +94,12 @@ function App() {
           </LayoutWrapper>
         } />
 
+        <Route path="/readings" element={
+          <LayoutWrapper showSidebar={true}>
+            <Readings />
+          </LayoutWrapper>
+        } />
+
         {/* Chat page without sidebar (protected) */}
         <Route
           path="/chat"
@@ -103,6 +111,18 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/personalization"
+          element={
+            <ProtectedRoute>
+              <LayoutWrapper showSidebar={false}>
+                <Personalization />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          }
+        />
+
       </Routes>
     </BrowserRouter>
   );
