@@ -38,12 +38,15 @@ function LoginPage() {
       });
 
       const result = await response.json();
-      if (result.success) {
-        window.dispatchEvent(new Event("loginStatusChanged"));
-        console.log("Login success! Navigating to chat...");
-        const from = location.state?.from?.pathname || '/chat';
-        navigate(from, { replace: true });
-      } else {
+        if (result.success) {
+          // Add this line to set sessionStorage
+          sessionStorage.setItem('loggedIn', 'true');
+          
+          window.dispatchEvent(new Event("loginStatusChanged"));
+          const from = location.state?.from?.pathname || '/chat';
+          navigate(from, { replace: true });
+      } 
+        else {
         alert(result.message);
       }
     } catch (error) {

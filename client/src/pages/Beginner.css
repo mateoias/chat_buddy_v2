@@ -1,0 +1,131 @@
+/* Beginner Page Styles */
+.beginner-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+  line-height: 1.2;
+  width: 100%;
+    box-sizing: border-box;
+}
+
+.beginner-page h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: #fff;
+   text-align: center;
+}
+
+.page-intro {
+  font-size: 1.2rem;
+  color: #ccc;
+  margin-bottom: 3rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #333;
+}
+
+/* Content Sections */
+.beginner-section {
+  margin-bottom: 2.5rem;
+  padding: 1.5rem;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.beginner-section h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: #646cff;
+}
+
+.beginner-section p {
+  color: #ddd;
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+/* Action Section */
+.action-section {
+  margin-top: 3rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+  border-radius: 12px;
+  text-align: center;
+  border: 1px solid #444;
+}
+
+.action-section h2 {
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.action-section p {
+  color: #ccc;
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+}
+
+.start-button {
+  display: inline-block;
+  padding: 0.875rem 2.5rem;
+  background-color: #646cff;
+  color: white;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.start-button:hover {
+  background-color: #535bf2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(100, 108, 255, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .beginner-page {
+    padding: 1rem;
+  }
+
+  .beginner-page h1 {
+    font-size: 2rem;
+  }
+
+  .page-intro {
+    font-size: 1.1rem;
+  }
+
+  .beginner-section {
+    padding: 1.25rem;
+  }
+
+  .beginner-section h2 {
+    font-size: 1.3rem;
+  }
+
+  .action-section {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .beginner-page h1 {
+    font-size: 1.75rem;
+  }
+
+  .beginner-section h2 {
+    font-size: 1.2rem;
+  }
+
+  .beginner-section p {
+    font-size: 1rem;
+  }
+
+  .start-button {
+    width: 100%;
+    padding: 0.75rem;
+  }
+}

@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import './App.css';
 import Header from './components/Header';
 import ProtectedRoute from "./components/ProtectedRoute";
 import LayoutWrapper from './components/LayoutWrapper';
@@ -7,7 +8,8 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Chat from './pages/Chat';
 import FAQs from './pages/FAQs';
-import './App.css';
+import Beginner from './pages/Beginner';
+import Advanced from './pages/Advanced';
 
 function App() {
   return (
@@ -75,6 +77,18 @@ function App() {
         <Route path="/signup" element={
           <LayoutWrapper showSidebar={false}>
             <Signup />
+          </LayoutWrapper>
+        } />
+        
+        <Route path="/beginner" element={
+          <LayoutWrapper showSidebar={true}>
+            <Beginner />
+          </LayoutWrapper>
+        } />
+
+        <Route path="/advanced" element={
+          <LayoutWrapper showSidebar={true}>
+            <Advanced />
           </LayoutWrapper>
         } />
 

@@ -107,6 +107,32 @@ def login():
         return jsonify({'success': True, 'message': 'Login successful'})
     else:
         return jsonify({'success': False, 'message': 'Invalid login data'}), 400
+    
+
+@app.route('/save_personalization', methods=['POST'])
+def save_personalization():
+    try:
+        data = request.get_json()
+        username = session.get('username')
+        
+        if not username:
+            return jsonify({'success': False, 'message': 'Not logged in'}), 401
+        
+        # TODO: Save personalization data to database or file
+        # For now, we'll store in session
+        session['personalization'] = data
+        session['personalization']['completed'] = True
+        session.modified = True
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Personalization saved',
+            'data': data
+        })
+        
+    except Exception as e:
+        print(f"Error saving personalization: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to save'}), 500
 
 @app.route('/logout', methods=['POST'])
 def logout():
@@ -298,16 +324,19 @@ def reset_chat():
 
 @app.route('/get_user_info', methods=['GET'])
 def get_user_info():
-    """Get current user session info"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'logged_in': False}), 200
+    if 'username' not in session:
+        return jsonify({'logged_in': False})
     
     return jsonify({
         'logged_in': True,
-        'user_id': user_id,
-        'background': session.get('user_background', {}),
-        'conversation_length': len(session.get('current_conversation', []))
+        'username': session.get('username'),
+        'background': {
+            'native_lang': session.get('native_lang', 'en'),
+            'target_lang': session.get('target_lang', 'es'),
+            'skill_level': session.get('skill_level', 'beginner')
+        },
+        'personalization': session.get('personalization', {}),
+        'conversation_length': len(session.get('messages', []))
     })
 
 if __name__ == '__main__':

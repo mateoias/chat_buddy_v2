@@ -1,199 +1,189 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { franc } from 'franc-min'; // Language detection library
+import React, { useState, useEffect, useRef } from 'react';
+import { franc } from 'franc-min';
+import PersonalizationModal from '../components/PersonalizationModal';
+import './Chat.css';
 
 // Language code mapping
 const LANG_CODE_MAP = {
-  'eng': 'en',  // English
-  'spa': 'es',  // Spanish  
-  'fra': 'fr',  // French
-  'deu': 'de',  // German
-  'ita': 'it',  // Italian
-  'cmn': 'zh',  // Chinese (Mandarin)
-  'por': 'pt',  // Portuguese
-  'rus': 'ru',  // Russian
-  'jpn': 'ja',  // Japanese
-  'kor': 'ko',  // Korean
+  'eng': 'en', 'spa': 'es', 'fra': 'fr', 'deu': 'de', 
+  'ita': 'it', 'cmn': 'zh', 'por': 'pt', 'rus': 'ru', 
+  'jpn': 'ja', 'kor': 'ko'
 };
 
 function Chat() {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([
+    { id: 1, text: 'Hello, what would you like to talk about today?', sender: 'bot' }
+  ]);
   const [userInfo, setUserInfo] = useState(null);
-  const [chatInitialized, setChatInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [playingAudio, setPlayingAudio] = useState(null);
+  const [playingAudioId, setPlayingAudioId] = useState(null);
+  const [isProcessingAudio, setIsProcessingAudio] = useState(false);
+  const [showPersonalization, setShowPersonalization] = useState(false);
+  const [isCheckingUser, setIsCheckingUser] = useState(true);
   const messagesEndRef = useRef(null);
   const audioRef = useRef(null);
-  const isPlayingRef = useRef(false); // Simple flag to prevent all duplicates
-  const lastAutoPlayedIdRef = useRef(null); // Track last auto-played message
 
-  // Scroll to bottom whenever messages update
+  // Get user info on mount
+  useEffect(() => {
+    checkUserAndPersonalization();
+  }, []);
+
+  const checkUserAndPersonalization = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/get_user_info', { 
+        credentials: 'include' 
+      });
+      const data = await response.json();
+      
+      if (data.logged_in) {
+        setUserInfo(data);
+        
+        // Check if user has personalization data
+        if (!data.personalization || !data.personalization.completed) {
+          setShowPersonalization(true);
+        } else {
+          // Use personalization to create a customized welcome message
+          initializePersonalizedChat(data);
+        }
+      }
+    } catch (err) {
+      console.error('Error getting user info:', err);
+    } finally {
+      setIsCheckingUser(false);
+    }
+  };
+
+  const initializePersonalizedChat = (userData) => {
+    // Create a personalized welcome message based on user preferences
+    let welcomeMessage = `Hello${userData.personalization?.name ? ' ' + userData.personalization.name : ''}! `;
+    
+    if (userData.personalization?.skillLevel === 'beginner') {
+      welcomeMessage += "Let's start with something simple. ";
+    } else if (userData.personalization?.skillLevel === 'intermediate') {
+      welcomeMessage += "Ready to practice your conversation skills? ";
+    } else {
+      welcomeMessage += "Let's have an advanced conversation. ";
+    }
+    
+    if (userData.personalization?.preferredTopics?.length > 0) {
+      welcomeMessage += `Would you like to talk about ${userData.personalization.preferredTopics[0].toLowerCase()}?`;
+    } else {
+      welcomeMessage += "What would you like to talk about today?";
+    }
+    
+    setMessages([{ id: 1, text: welcomeMessage, sender: 'bot' }]);
+  };
+
+  const handlePersonalizationComplete = (personalData) => {
+    // Update user info with personalization
+    const updatedUserInfo = { ...userInfo, personalization: { ...personalData, completed: true } };
+    setUserInfo(updatedUserInfo);
+    setShowPersonalization(false);
+    
+    // Initialize chat with personalized message
+    initializePersonalizedChat(updatedUserInfo);
+  };
+
+  const handlePersonalizationSkip = () => {
+    setShowPersonalization(false);
+    // Use default welcome message
+    setMessages([{ id: 1, text: 'Hello! What would you like to talk about today?', sender: 'bot' }]);
+  };
+
+  // Scroll to bottom when messages update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Initialize chat when component mounts
-  useEffect(() => {
-    initializeChat();
-  }, []);
-
-  // Cleanup audio when component unmounts
+  // Cleanup audio on unmount
   useEffect(() => {
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
       }
-      isPlayingRef.current = false;
     };
   }, []);
 
-  // Simple auto-play logic - only when messages change and it's a new bot message
-  useEffect(() => {
-    if (messages.length === 0 || isPlayingRef.current) return;
-    
-    const lastMessage = messages[messages.length - 1];
-    
-    // Auto-play only bot messages that we haven't auto-played yet
-    if (lastMessage && 
-        lastMessage.sender === 'bot' && 
-        lastMessage.id !== lastAutoPlayedIdRef.current) {
-      
-      console.log('Auto-playing bot message:', lastMessage.id);
-      lastAutoPlayedIdRef.current = lastMessage.id;
-      
-      // Small delay to ensure message is rendered
-      setTimeout(() => {
-        if (!isPlayingRef.current) { // Double-check we're not playing anything
-          playAudio(lastMessage.id, lastMessage.text, lastMessage.sender, true);
-        }
-      }, 200);
-    }
-  }, [messages]);
-
   const detectLanguage = (text) => {
     try {
-      const detectedLang = franc(text);
-      const mappedLang = LANG_CODE_MAP[detectedLang];
-      
-      if (!mappedLang) {
-        return null;
-      }
-      
-      console.log(`Detected language: ${detectedLang} -> ${mappedLang}`);
-      return mappedLang;
+      const detected = franc(text);
+      return LANG_CODE_MAP[detected] || null;
     } catch (error) {
-      console.log('Language detection failed:', error);
+      console.error('Language detection failed:', error);
       return null;
     }
   };
 
-  const determineLanguageForTTS = (text, sender) => {
-    if (sender === 'bot' && userInfo?.background?.target_lang) {
+  const getLanguageForTTS = (text, sender) => {
+    // For BOT messages: Need to be smarter about language choice
+    if (sender === 'bot') {
+      // Detect if the bot is speaking in the user's native language
+      // Look for common patterns that indicate native language explanation
+      const detected = detectLanguage(text);
+      
+      // If bot's text is detected as user's native language, use native voice
+      if (detected && detected === userInfo?.background?.native_lang) {
+        console.log(`Bot speaking in native language: ${detected}`);
+        return detected;
+      }
+      
+      // Check for explicit language markers or mixed content
+      const hasNativeLanguageMarkers = (
+        text.includes("in English") || 
+        text.includes("means") || 
+        text.includes("translation") ||
+        text.includes("In " + getNativeLanguageName(userInfo?.background?.native_lang))
+      );
+      
+      if (hasNativeLanguageMarkers) {
+        console.log(`Bot appears to be explaining in native language`);
+        return userInfo?.background?.native_lang || 'en';
+      }
+      
+      // Default: bot speaks in target language
+      console.log(`Bot speaking in target language: ${userInfo?.background?.target_lang}`);
+      return userInfo?.background?.target_lang || 'en';
+    }
+    
+    // For USER messages:
+    // First try to detect the language they're actually speaking
+    const detected = detectLanguage(text);
+    
+    if (detected) {
+      console.log(`User text detected as: ${detected}`);
+      return detected;
+    }
+    
+    // If detection fails, check if the text has non-ASCII characters
+    const hasNonAscii = /[^\x00-\x7F]/.test(text);
+    if (hasNonAscii && userInfo?.background?.target_lang) {
+      console.log(`Non-ASCII detected, using target language: ${userInfo.background.target_lang}`);
       return userInfo.background.target_lang;
     }
     
-    if (sender === 'user') {
-      const detectedLang = detectLanguage(text);
-      
-      if (detectedLang) {
-        console.log(`Using detected language ${detectedLang} for TTS`);
-        return detectedLang;
-      }
-      
-      const hasNonAscii = /[^\x00-\x7F]/.test(text);
-      if (hasNonAscii && userInfo?.background?.target_lang) {
-        return userInfo.background.target_lang;
-      }
-      
-      return userInfo?.background?.native_lang || 'en';
-    }
-    
-    return 'en';
+    // Last resort: assume they're speaking their target language (since they're practicing)
+    console.log(`Defaulting to target language: ${userInfo?.background?.target_lang || 'en'}`);
+    return userInfo?.background?.target_lang || userInfo?.background?.native_lang || 'en';
   };
 
-  const initializeChat = async () => {
-    try {
-      setIsLoading(true);
-      
-      const userRes = await fetch('http://localhost:5000/get_user_info', {
-        credentials: 'include',
-      });
-      const userData = await userRes.json();
-      
-      if (!userData.logged_in) {
-        console.log('User not logged in');
-        return;
-      }
-      
-      setUserInfo(userData);
-
-      const chatRes = await fetch('http://localhost:5000/start_chat', {
-        method: 'POST',
-        credentials: 'include',
-      });
-      const chatData = await chatRes.json();
-      
-      if (chatData.success) {
-        const welcomeMessage = { 
-          id: Date.now(), 
-          text: `Hello!`,
-          //  I'm here to help you practice ${userData.background?.target_lang || 'your target language'}. What would you like to talk about today?`, 
-          sender: 'bot' 
-        };
-        
-        setMessages([welcomeMessage]);
-        setChatInitialized(true);
-      }
-    } catch (err) {
-      console.error('Error initializing chat:', err);
-      const errorMessage = { 
-        id: Date.now(), 
-        text: "Sorry, I couldn't initialize the chat. Please try refreshing.", 
-        sender: 'bot' 
-      };
-      setMessages([errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const resetChat = async () => {
-    try {
-      setIsLoading(true);
-      stopAudio();
-      lastAutoPlayedIdRef.current = null;
-      
-      const res = await fetch('http://localhost:5000/reset_chat', {
-        method: 'POST',
-        credentials: 'include',
-      });
-      const data = await res.json();
-      if (data.success) {
-        setMessages([]);
-        setChatInitialized(false);
-        await initializeChat();
-      }
-    } catch (err) {
-      console.error('Error resetting chat:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const stopAudio = () => {
-    console.log('Stopping audio');
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      audioRef.current = null;
-    }
-    setPlayingAudio(null);
-    isPlayingRef.current = false;
+  // Helper function to get language name
+  const getNativeLanguageName = (langCode) => {
+    const languages = {
+      'en': 'English',
+      'es': 'Spanish',
+      'fr': 'French',
+      'de': 'German',
+      'it': 'Italian',
+      'zh': 'Chinese'
+    };
+    return languages[langCode] || 'English';
   };
 
   const handleSend = async (text) => {
-    if (!text.trim() || !chatInitialized || isLoading) return;
+    if (!text.trim() || isLoading) return;
   
+    // Add user message
     const userMessage = { id: Date.now(), text, sender: 'user' };
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
@@ -201,152 +191,121 @@ function Chat() {
     try {
       const res = await fetch('http://localhost:5000/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({message: text})
+        body: JSON.stringify({ message: text })
       });
   
       const data = await res.json();
-  
-      if (data.error) {
-        throw new Error(data.error);
-      }
-  
+      
+      // Add bot response
       const botMessage = {
         id: Date.now() + 1,
-        text: data.response,
+        text: data.response || "Sorry, I couldn't understand that.",
         sender: 'bot'
       };
-  
       setMessages(prev => [...prev, botMessage]);
   
     } catch (err) {
-      console.error('Error communicating with server:', err);
-      const errorMessage = {
+      console.error('Chat error:', err);
+      setMessages(prev => [...prev, {
         id: Date.now() + 1,
-        text: "Sorry, I couldn't get a response. Please try again.",
+        text: "Sorry, something went wrong. Please try again.",
         sender: 'bot'
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      }]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Memoized playAudio function to prevent recreation on every render
-  const playAudio = useCallback(async (messageId, text, sender, isAutoPlay = false) => {
+  const toggleAudio = async (messageId, text, sender) => {
+    // Prevent double-processing
+    if (isProcessingAudio) return;
+    setIsProcessingAudio(true);
+
+    // If clicking the currently playing audio, stop it
+    if (playingAudioId === messageId) {
+      audioRef.current?.pause();
+      audioRef.current = null;
+      setPlayingAudioId(null);
+      setIsProcessingAudio(false);
+      return;
+    }
+
+    // Stop any currently playing audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';  // Clear the source
+      audioRef.current = null;
+    }
+
     try {
-      console.log(`playAudio: ${messageId}, auto: ${isAutoPlay}, playing: ${isPlayingRef.current}`);
+      setPlayingAudioId(messageId);
       
-      // If audio is already playing, handle stop/start logic
-      if (isPlayingRef.current) {
-        if (!isAutoPlay && playingAudio === messageId) {
-          // Manual click on currently playing message - stop it
-          console.log('Stopping currently playing audio');
-          stopAudio();
-          return;
-        } else {
-          // Already playing something else or auto-play while playing - ignore
-          console.log('Audio already playing, ignoring request');
-          return;
-        }
-      }
-
-      // Set the flag immediately to prevent any other calls
-      isPlayingRef.current = true;
-      setPlayingAudio(messageId);
-
-      // Get language for TTS
-      const language = determineLanguageForTTS(text, sender);
-      console.log(`Playing audio in ${language} (${isAutoPlay ? 'auto' : 'manual'})`);
-
-      // Request TTS from server
+      const language = getLanguageForTTS(text, sender);
+      
       const response = await fetch('http://localhost:5000/text-to-speech', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({
-          text: text,
-          language: language
-        })
+        body: JSON.stringify({ text, language })
       });
 
-      if (!response.ok) {
-        throw new Error('TTS request failed');
-      }
+      if (!response.ok) throw new Error('TTS failed');
 
       const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
       
-      // Create and configure audio element
       const audio = new Audio(audioUrl);
+      audioRef.current = audio;
       
       audio.onended = () => {
-        console.log('Audio ended');
-        setPlayingAudio(null);
-        isPlayingRef.current = false;
+        setPlayingAudioId(null);
+        setIsProcessingAudio(false);
         URL.revokeObjectURL(audioUrl);
-        if (audioRef.current === audio) {
-          audioRef.current = null;
-        }
       };
       
-      audio.onerror = (error) => {
-        console.error('Audio error:', error);
-        setPlayingAudio(null);
-        isPlayingRef.current = false;
+      audio.onerror = () => {
+        setPlayingAudioId(null);
+        setIsProcessingAudio(false);
         URL.revokeObjectURL(audioUrl);
-        if (audioRef.current === audio) {
-          audioRef.current = null;
-        }
+        console.error('Audio playback failed');
       };
 
-      audioRef.current = audio;
       await audio.play();
-      console.log('Audio started playing');
-
+      
     } catch (err) {
-      console.error('playAudio error:', err);
-      setPlayingAudio(null);
-      isPlayingRef.current = false;
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      console.error('Audio error:', err);
+      setPlayingAudioId(null);
+      setIsProcessingAudio(false);
     }
-  }, [userInfo, playingAudio]);
+  };
 
-  // Debounced button click handler to prevent double-clicks
-  const handleAudioButtonClick = useCallback((messageId, text, sender) => {
-    // Prevent rapid clicks
-    if (Date.now() - (handleAudioButtonClick.lastClick || 0) < 500) {
-      console.log('Preventing rapid click');
-      return;
+  const resetChat = async () => {
+    try {
+      await fetch('http://localhost:5000/reset_chat', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      
+      setMessages([
+        { id: Date.now(), text: 'Hello, what would you like to talk about today?', sender: 'bot' }
+      ]);
+      setPlayingAudioId(null);
+      audioRef.current?.pause();
+      
+    } catch (err) {
+      console.error('Reset error:', err);
     }
-    handleAudioButtonClick.lastClick = Date.now();
-    
-    playAudio(messageId, text, sender, false);
-  }, [playAudio]);
+  };
 
-  if (!chatInitialized && isLoading) {
+  // Show loading while checking user
+  if (isCheckingUser) {
     return (
-      <div className="page-layout">
-        <div className="container-fluid">
-          <div className="row justify-content-center">
-            <div className="col-xl-8 col-lg-10">
-              <div className="chat-container d-flex align-items-center justify-content-center">
-                <div className="text-center">
-                  <div className="spinner-border text-primary mb-3" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                  </div>
-                  <p className="text-muted">Initializing your personalized chat session...</p>
-                </div>
-              </div>
-            </div>
+      <div className="chat-page">
+        <div className="chat-container">
+          <div className="loading-container">
+            <p>Loading your personalized experience...</p>
           </div>
         </div>
       </div>
@@ -354,119 +313,79 @@ function Chat() {
   }
 
   return (
-    <div className="page-layout">
-      <div className="container-fluid">
-        <div className="row justify-content-center">
-          <div className="col-xl-8 col-lg-10">
-            <div className="content-card">
-              <div className="chat-container">
-                {/* User info display */}
-                {userInfo && (
-                  <div className="user-info mb-3">
-                    <div className="row text-center text-md-start">
-                      <div className="col-md-4 mb-2 mb-md-0">
-                        <strong>Learning:</strong> {userInfo.background?.native_lang?.toUpperCase()} → {userInfo.background?.target_lang?.toUpperCase()}
-                      </div>
-                      <div className="col-md-4 mb-2 mb-md-0">
-                        <strong>Level:</strong> 
-                        <span className={`level-badge level-${userInfo.background?.skill_level} ms-2`}>
-                          {userInfo.background?.skill_level}
-                        </span>
-                      </div>
-                      <div className="col-md-4">
-                        <strong>Messages:</strong> <span className="badge bg-secondary">{userInfo.conversation_length}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+    <div className="chat-page">
+      {/* Show personalization modal if needed */}
+      {showPersonalization && (
+        <PersonalizationModal
+          onComplete={handlePersonalizationComplete}
+          onSkip={handlePersonalizationSkip}
+        />
+      )}
+      
+      <div className="chat-container">
+        {/* Simple user info bar */}
+        {userInfo && (
+          <div className="user-info-bar">
+            <span>Learning: {userInfo.background?.target_lang?.toUpperCase()}</span>
+            <span>Level: {userInfo.background?.skill_level}</span>
+          </div>
+        )}
 
-                {/* Messages Area */}
-                <div className="messages-area" style={{ height: '60vh', overflowY: 'auto', padding: '1rem', border: '1px solid var(--bg-tertiary)', borderRadius: 'var(--border-radius)', marginBottom: '1rem' }}>
-                  {messages.map((msg) => (
-                    <div key={msg.id} className={`d-flex mb-3 ${msg.sender === 'user' ? 'justify-content-end' : 'justify-content-start'}`}>
-                      <div className={`message-bubble ${msg.sender} ${msg.sender === 'user' ? 'bg-primary text-white' : 'bg-light'}`} style={{ maxWidth: '70%', padding: '0.75rem 1rem', borderRadius: 'var(--border-radius-lg)', position: 'relative' }}>
-                        <div className="d-flex align-items-center justify-content-between mb-1">
-                          <small className="fw-bold opacity-75">
-                            {msg.sender === 'bot' ? '🤖 AI Tutor' : '👤 You'}
-                          </small>
-                          <button
-                            onClick={() => handleAudioButtonClick(msg.id, msg.text, msg.sender)}
-                            className={`btn btn-sm ms-2 ${msg.sender === 'user' ? 'btn-outline-light' : 'btn-outline-primary'}`}
-                            style={{ 
-                              border: 'none', 
-                              background: 'none', 
-                              padding: '0.25rem',
-                              fontSize: '0.875rem',
-                              opacity: playingAudio === msg.id ? 1 : 0.7
-                            }}
-                            title={playingAudio === msg.id ? "Stop audio" : "Play audio"}
-                            disabled={isLoading}
-                          >
-                            {playingAudio === msg.id ? (
-                              <i className="bi bi-stop-fill"></i>
-                            ) : (
-                              <i className="bi bi-volume-up-fill"></i>
-                            )}
-                          </button>
-                        </div>
-                        <div>{msg.text}</div>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {isLoading && (
-                    <div className="d-flex justify-content-start mb-3">
-                      <div className="message-bubble bot bg-light" style={{ maxWidth: '70%', padding: '0.75rem 1rem', borderRadius: 'var(--border-radius-lg)' }}>
-                        <div className="d-flex align-items-center">
-                          <div className="spinner-border spinner-border-sm me-2" role="status">
-                            <span className="visually-hidden">Loading...</span>
-                          </div>
-                          <em className="text-muted">AI is thinking...</em>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* Chat Input */}
-                <ChatInput onSend={handleSend} disabled={isLoading} />
-
-                {/* Reset Chat Button */}
-                <div className="text-center mt-3 pt-3 border-top">
+        {/* Messages */}
+        <div className="messages-area">
+          {messages.map((msg) => (
+            <div key={msg.id} className={`message-row ${msg.sender}`}>
+              <div className={`message-bubble ${msg.sender}`}>
+                <div className="message-header">
+                  <strong>{msg.sender === 'bot' ? '🤖 Bot' : '👤 You'}</strong>
                   <button
-                    onClick={resetChat}
-                    className="btn btn-outline-danger btn-sm"
-                    disabled={isLoading}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleAudio(msg.id, msg.text, msg.sender);
+                    }}
+                    className="audio-button"
+                    disabled={isLoading || isProcessingAudio}
+                    aria-label={playingAudioId === msg.id ? "Stop audio" : "Play audio"}
                   >
-                    {isLoading ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status">
-                          <span className="visually-hidden">Loading...</span>
-                        </span>
-                        Resetting...
-                      </>
-                    ) : (
-                      <>
-                        <i className="bi bi-arrow-clockwise me-1"></i>
-                        Start New Conversation
-                      </>
-                    )}
+                    {playingAudioId === msg.id ? '⏹' : '🔊'}
                   </button>
                 </div>
+                <div className="message-text">{msg.text}</div>
               </div>
             </div>
-          </div>
+          ))}
+          
+          {isLoading && (
+            <div className="message-row bot">
+              <div className="message-bubble bot loading">
+                <span>AI is thinking...</span>
+              </div>
+            </div>
+          )}
+          
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input */}
+        <ChatInput onSend={handleSend} disabled={isLoading} />
+
+        {/* Reset button */}
+        <div className="chat-actions">
+          <button onClick={resetChat} className="reset-button">
+            Reset Chat
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
+// Simple input component
 function ChatInput({ onSend, disabled }) {
   const [input, setInput] = useState('');
 
-  const submit = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (input.trim() && !disabled) {
       onSend(input);
@@ -475,31 +394,17 @@ function ChatInput({ onSend, disabled }) {
   };
 
   return (
-    <form onSubmit={submit} className="d-flex gap-2">
+    <form onSubmit={handleSubmit} className="chat-input-form">
       <input
         type="text"
         value={input}
         onChange={e => setInput(e.target.value)}
-        placeholder={disabled ? "Please wait..." : "Type your message in any language..."}
-        className="form-control"
+        placeholder={disabled ? "Please wait..." : "Type your message..."}
         disabled={disabled}
+        className="chat-input"
       />
-      <button 
-        type="submit" 
-        className="btn btn-primary"
-        disabled={disabled || !input.trim()}
-        style={{ minWidth: '80px' }}
-      >
-        {disabled ? (
-          <span className="spinner-border spinner-border-sm" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </span>
-        ) : (
-          <>
-            <i className="bi bi-send me-1"></i>
-            Send
-          </>
-        )}
+      <button type="submit" disabled={disabled || !input.trim()} className="send-button">
+        Send
       </button>
     </form>
   );

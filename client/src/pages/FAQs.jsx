@@ -7,7 +7,7 @@ function FAQs() {
   const faqs = [
     {
       question: "How does the AI language chatbot work?",
-      answer: "Our AI chatbot uses advanced GPT-4 technology to provide conversational practice in your target language. It adapts to your level and provides natural, contextual responses to help you improve your speaking skills."
+      answer: "Our AI chatbot uses GPT-4 technology to provide conversational practice in your target language. It adapts to your level and provides natural, contextual responses to help you improve your speaking skills."
     },
     {
       question: "What languages are currently supported?",
@@ -22,12 +22,12 @@ function FAQs() {
       answer: "While our beginner level is designed to be as accessible as possible, having some basic knowledge of the language (alphabet, basic greetings) will help you get the most out of the experience."
     },
     {
-      question: "How often should I practice?",
-      answer: "We recommend daily practice sessions of 15-30 minutes for optimal results. Consistency is more important than duration - regular short sessions are better than occasional long ones."
+      question: "why does the conversation sometimes get creepy or strange??",
+      answer: "ChatGPT is designed to follow your lead, so if the conversation takes an unexpected turn, it’s usually because you’ve steered it that way, either unintentionally or intentionally. ChatGPT doesn't have its own agenda. It just does what you ask. And remember, you can always reset the conversation with the reset button and start over fresh!"
     },
     {
-      question: "Can I track my progress?",
-      answer: "Currently, we don't have a formal progress tracking system, but we're working on implementing features like conversation history, vocabulary tracking, and proficiency assessments."
+      question: "What can I do if I don't like the way the conversation is going?",
+      answer: "The app is pretty good at understanding what you're trying to do, and it’s designed to guess what you need. You can control the direction of the conversation more by clearly setting your intentions or asking for specific conversation types. If you want to switch things up, just let it know—like, 'I want to practice the past tense,' or 'I’m talking about my sister, not my brother.' If you're clear, the app will adjust and help keep the conversation going the way you want."
     },
     {
       question: "Is my conversation data saved?",
